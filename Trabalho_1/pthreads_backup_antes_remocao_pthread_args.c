@@ -25,7 +25,10 @@ void imprimeMatriz(int **A){
 // Função que será executada pelas threads para inicializar as matrizes A e B
 void *initialize(void *arg) {
     int i, j;
+
     int thread_num = *(int *)arg; // Converte o argumento passado para a thread para um inteiro
+
+    printf("\n pthread_args: %d\n\n",thread_num);
 
     // Cada thread inicializa algumas linhas das matrizes A e B
     for (i = thread_num; i < MATRIX_SIZE; i += NUM_THREADS) {
@@ -76,7 +79,6 @@ int main() { // Função principal do programa
     }
 
     srand(time(NULL)); // Inicializa a semente do gerador de números aleatórios com o tempo atual
-
     // Cria as threads para inicializar as matrizes A e B usando pthread_create
     for (i = 0; i < NUM_THREADS; i++) {
         thread_args[i] = i;
@@ -88,11 +90,6 @@ int main() { // Função principal do programa
         pthread_join(threads[i], NULL);
     }
 
-    /*imprimeMatriz(A);
-    printf("\n\n");
-    imprimeMatriz(B);
-    printf("\n\n");*/
-
     // Cria as threads para multiplicar as matrizes A e B usando pthread_create
     for (i = 0; i < NUM_THREADS; i++) {
         thread_args[i] = i;
@@ -103,14 +100,6 @@ int main() { // Função principal do programa
     for (i = 0; i < NUM_THREADS; i++) {
         pthread_join(threads[i], NULL);
     }
-
-   /* printf("Matriz resultante:\n");
-     for (i = 0; i < MATRIX_SIZE; i++) {
-         for (j = 0; j < MATRIX_SIZE; j++) {
-             printf("%d ", C[i][j]); // Imprime cada elemento da matriz resultante C
-         }
-         printf("\n"); // Pula uma linha após imprimir cada linha da matriz
-     }*/
 
      struct timespec end;
      timespec_get(&end, TIME_UTC); // Obtém o tempo atual em UTC
@@ -127,4 +116,5 @@ int main() { // Função principal do programa
     }
     free(A);
     free(B);
+    free(C);
 }
