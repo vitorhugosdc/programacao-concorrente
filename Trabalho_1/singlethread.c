@@ -1,30 +1,22 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <time.h>
-#include <unistd.h>
-#include<pthread.h>
+#include <pthread.h>
 
-#define MATRIX_SIZE 4000
+#define MATRIX_SIZE 1000
 #define NUM_THREADS 10
 
-int **A;
-int **B;
-int **C;
+double **A;
+double **B;
+double **C;
 
-
-void preencheMatriz(int **A) {
-    int i, j;
-    srand(time(NULL));
-    for (i = 0; i < MATRIX_SIZE; i++) {
-        for (j = 0; j < MATRIX_SIZE; j++) {
-            A[i][j] = rand() % 100;
-        }
-    }
-}
-
+// Função que será executada pelas threads para inicializar as matrizes A e B
 void *initialize(void *arg) {
     int i, j;
-    int thread_num = *(int *)arg; // Converte o argumento passado para a thread para um inteiro
+
+    int thread_num = (int)(long) arg;
+
+    printf("\n pthread_args: %d\n\n",thread_num);
 
     // Cada thread inicializa algumas linhas das matrizes A e B
     for (i = thread_num; i < MATRIX_SIZE; i += NUM_THREADS) {
@@ -33,11 +25,10 @@ void *initialize(void *arg) {
             B[i][j] = rand() % 10; // Gera um número aleatório entre 0 e 9 para cada elemento da matriz B
         }
     }
-
     return NULL;
 }
 
-void multiplicaMatrizes(int **A, int **B, int **C) {
+void multiplicaMatrizes(double **A, double **B, double **C) {
     int i, j, k;
     for (i = 0; i < MATRIX_SIZE; i++) {
         for (j = 0; j < MATRIX_SIZE; j++) {
@@ -49,10 +40,10 @@ void multiplicaMatrizes(int **A, int **B, int **C) {
     }
 }
 
-void printaMatriz(int **A){
+void printaMatriz(double **A){
     for (int i = 0; i < MATRIX_SIZE; i++) {
         for (int j = 0; j < MATRIX_SIZE; j++) {
-            printf("%d ", A[i][j]);
+            printf("%.10f ", A[i][j]);
         }
         printf("\n");
     }
@@ -62,24 +53,25 @@ int main(){
     struct timespec begin;
     timespec_get(&begin, TIME_UTC);
 
-    int i, j;
+    int i;
 
     pthread_t threads[NUM_THREADS]; // Declara um array de threads do tipo pthread_t
-    int thread_args[NUM_THREADS]; // Declara um array de argumentos para as threads
+
 
     // Aloca memória para as matrizes A, B e C
-    A = malloc(MATRIX_SIZE * sizeof(int *));
-    B = malloc(MATRIX_SIZE * sizeof(int *));
-    C = malloc(MATRIX_SIZE * sizeof(int *));
+    A = (double**)malloc(MATRIX_SIZE * sizeof(double *));
+    B = (double**)malloc(MATRIX_SIZE * sizeof(double *));
+    C = (double**)malloc(MATRIX_SIZE * sizeof(double *));
     for (i = 0; i < MATRIX_SIZE; i++) {
-        A[i] = malloc(MATRIX_SIZE * sizeof(int));
-        B[i] = malloc(MATRIX_SIZE * sizeof(int));
-        C[i] = malloc(MATRIX_SIZE * sizeof(int));
+        A[i] = (double*)malloc(MATRIX_SIZE * sizeof(double));
+        B[i] = (double*)malloc(MATRIX_SIZE * sizeof(double));
+        C[i] = (double*)malloc(MATRIX_SIZE * sizeof(double));
     }
 
+    srand(time(NULL)); // Inicializa a semente do gerador de números aleatórios com o tempo atual
+    // Cria as threads para inicializar as matrizes A e B usando pthread_create
     for (i = 0; i < NUM_THREADS; i++) {
-        thread_args[i] = i;
-        pthread_create(&threads[i], NULL, initialize, &thread_args[i]);
+        pthread_create(&threads[i], NULL, initialize, (void *)(long)i);
     }
 
     // Espera as threads terminarem a inicialização das matrizes A e B usando pthread_join
@@ -87,15 +79,7 @@ int main(){
         pthread_join(threads[i], NULL);
     }
 
-    /*printaMatriz(A);
-    printf("\n\n");
-    printaMatriz(B);*/
-
     multiplicaMatrizes(A, B, C);
-
-    /*printf("\n\n");
-
-    printaMatriz(C);*/
 
     struct timespec end;
     timespec_get(&end, TIME_UTC);
@@ -112,4 +96,5 @@ int main(){
     }
     free(A);
     free(B);
+    free(C);
 }

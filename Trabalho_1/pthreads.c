@@ -6,17 +6,17 @@
 #define NUM_THREADS 10 // Define o número de threads a serem criadas
 #define MATRIX_SIZE 1000 // Define o tamanho das matrizes
 
-int **A; // Declara a matriz A como um ponteiro duplo para inteiros
-int **B; // Declara a matriz B como um ponteiro duplo para inteiros
-int **C; // Declara a matriz resultante C como um ponteiro duplo para inteiros
+double **A; // Declara a matriz A como um ponteiro duplo para inteiros
+double **B; // Declara a matriz B como um ponteiro duplo para inteiros
+double **C; // Declara a matriz resultante C como um ponteiro duplo para inteiros
 
 // Função que imprime uma matriz passada como argumento
-void imprimeMatriz(int **A){
+void imprimeMatriz(double **A){
     int i, j;
     printf("Matriz A E B:\n");
     for (i = 0; i < MATRIX_SIZE; i++) {
         for (j = 0; j < MATRIX_SIZE; j++) {
-            printf("%d ", A[i][j]); // Imprime cada elemento da matriz
+            printf("%.20f ", A[i][j]); // Imprime cada elemento da matriz
         }
         printf("\n"); // Pula uma linha após imprimir cada linha da matriz
     }
@@ -26,29 +26,27 @@ void imprimeMatriz(int **A){
 void *initialize(void *arg) {
     int i, j;
 
-    //int thread_num = *(int *)arg; // Converte o argumento passado para a thread para um inteiro
-
     int thread_num = (int)(long) arg;
-    //(int *)arg tranforma o ponteiro de void * pra int * e o * mais a esquerda acessa o dado desse ponteiro convertido
-    
 
     printf("\n pthread_args: %d\n\n",thread_num);
 
     // Cada thread inicializa algumas linhas das matrizes A e B
     for (i = thread_num; i < MATRIX_SIZE; i += NUM_THREADS) {
         for (j = 0; j < MATRIX_SIZE; j++) {
-            A[i][j] = rand() % 10; // Gera um número aleatório entre 0 e 9 para cada elemento da matriz A
-            B[i][j] = rand() % 10; // Gera um número aleatório entre 0 e 9 para cada elemento da matriz B
+            A[i][j] = (double)rand() / RAND_MAX * 10; // Gera um número aleatório entre 0 e 9 para cada elemento da matriz A
+            B[i][j] = (double)rand() / RAND_MAX * 10; // Gera um número aleatório entre 0 e 9 para cada elemento da matriz B
+            //printf("%.10f ", A[i][j]); // Imprime cada elemento da matriz
         }
     }
-
     return NULL;
 }
 
 // Função que será executada pelas threads para multiplicar as matrizes A e B
 void *multiply(void *arg) {
     int i, j, k;
-    int thread_num = *(int *)arg; // Converte o argumento passado para a thread para um inteiro
+    //int thread_num = *(int *)arg; // Converte o argumento passado para a thread para um inteiro
+
+    int thread_num = (int)(long) arg;
 
     // Cada thread calcula algumas linhas da matriz resultante C = A * B
     for (i = thread_num; i < MATRIX_SIZE; i += NUM_THREADS) {
@@ -59,7 +57,6 @@ void *multiply(void *arg) {
             }
         }
     }
-
     return NULL;
 }
 
@@ -70,22 +67,19 @@ int main() { // Função principal do programa
 
     int i;
     pthread_t threads[NUM_THREADS]; // Declara um array de threads do tipo pthread_t
-    int thread_args[NUM_THREADS]; // Declara um array de argumentos para as threads
-
     // Aloca memória para as matrizes A, B e C usando malloc
-    A = malloc(MATRIX_SIZE * sizeof(int *));
-    B = malloc(MATRIX_SIZE * sizeof(int *));
-    C = malloc(MATRIX_SIZE * sizeof(int *));
+    A = (double**)malloc(MATRIX_SIZE * sizeof(double *));
+    B = (double**)malloc(MATRIX_SIZE * sizeof(double *));
+    C = (double**)malloc(MATRIX_SIZE * sizeof(double *));
     for (i = 0; i < MATRIX_SIZE; i++) {
-        A[i] = malloc(MATRIX_SIZE * sizeof(int));
-        B[i] = malloc(MATRIX_SIZE * sizeof(int));
-        C[i] = malloc(MATRIX_SIZE * sizeof(int));
+        A[i] = (double*)malloc(MATRIX_SIZE * sizeof(double));
+        B[i] = (double*)malloc(MATRIX_SIZE * sizeof(double));
+        C[i] = (double*)malloc(MATRIX_SIZE * sizeof(double));
     }
 
     srand(time(NULL)); // Inicializa a semente do gerador de números aleatórios com o tempo atual
     // Cria as threads para inicializar as matrizes A e B usando pthread_create
     for (i = 0; i < NUM_THREADS; i++) {
-        thread_args[i] = i;
         pthread_create(&threads[i], NULL, initialize, (void *)(long)i);
     }
 
@@ -96,8 +90,7 @@ int main() { // Função principal do programa
 
     // Cria as threads para multiplicar as matrizes A e B usando pthread_create
     for (i = 0; i < NUM_THREADS; i++) {
-        thread_args[i] = i;
-        pthread_create(&threads[i], NULL, multiply, &thread_args[i]);
+        pthread_create(&threads[i], NULL, multiply, (void *)(long)i);
     }
 
     // Espera as threads terminarem a multiplicação das matrizes A e B usando pthread_join
