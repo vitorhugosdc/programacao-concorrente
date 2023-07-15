@@ -3,12 +3,11 @@
 #include <time.h>
 #include <pthread.h>
 
-#define MATRIX_SIZE 1000
-#define NUM_THREADS 10
-
 double **A;
 double **B;
 double **C;
+int MATRIX_SIZE; 
+int NUM_THREADS;
 
 // Função que será executada pelas threads para inicializar as matrizes A e B
 void *initialize(void *arg) {
@@ -49,7 +48,15 @@ void printaMatriz(double **A){
     }
 }
 
-int main(){
+int main(int argc, char *argv[]){
+
+    if(argc != 3 || atoi(argv[1]) == 0 || atoi(argv[2]) == 0){
+        return 0;
+    }
+
+    MATRIX_SIZE = atoi(argv[1]);
+    NUM_THREADS = atoi(argv[2]);
+
     struct timespec begin;
     timespec_get(&begin, TIME_UTC);
 
@@ -79,7 +86,7 @@ int main(){
         pthread_join(threads[i], NULL);
     }
 
-    multiplicaMatrizes(A, B, C);
+    multiplicaMatrizes(A, B, C); //n precisa passar como parametro
 
     struct timespec end;
     timespec_get(&end, TIME_UTC);
