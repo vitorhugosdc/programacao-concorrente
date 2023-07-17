@@ -9,20 +9,27 @@ double **C;
 int TAM_MATRIZ; 
 int NUM_THREADS;
 
-// Função que será executada pelas threads para inicializar as matrizes A e B
+// Inicializa as matrizes A e B com números aleatórios de ponto flutuante entre 0.0 e 9.0
 void *preencheMatriz(void *arg) { //----------------------------------------------------------------------------------------------------------------------------
     int i, j;
-    int num_thread = (int)(long) arg;
+
+    int num_thread = (int)(long) arg; //é o "ID" da thread, serve pra calcular quais linhas da matriz a thread vai calcular
+    /*
+        Por exemplo: supondo que estamos utilizando 10 threads, a thread 0 executará as linhas 0, 10, 20,... (número da thread + 10)
+                     a thread 1 executará as linhas 1, 11, 21, ... (número da thread + 10)                
+    */
+
     // Cada thread inicializa algumas linhas das matrizes A e B
-    for (i = num_thread; i < TAM_MATRIZ; i += NUM_THREADS) {
+    for (i = num_thread; i < TAM_MATRIZ; i += NUM_THREADS) { //(número da thread + 10 para 10 threads)
         for (j = 0; j < TAM_MATRIZ; j++) {
-            A[i][j] = (double)rand() / RAND_MAX * 10; // Gera um número aleatório entre 0 e 9 para cada elemento da matriz A
-            B[i][j] = (double)rand() / RAND_MAX * 10; // Gera um número aleatório entre 0 e 9 para cada elemento da matriz B
+            A[i][j] = (double)rand() / RAND_MAX * 10;
+            B[i][j] = (double)rand() / RAND_MAX * 10;
         }
     }
     return NULL;
 }
 
+//multiplicação de matrizes padrão SINGLETHREAD
 void multiplicaMatriz() { //----------------------------------------------------------------------------------------------------------------------------
     int i, j, k;
     for (i = 0; i < TAM_MATRIZ; i++) {
@@ -37,12 +44,12 @@ void multiplicaMatriz() { //----------------------------------------------------
 
 int main(int argc, char *argv[]){
 
-    if(argc != 3 || atoi(argv[1]) == 0 || atoi(argv[2]) == 0){
+    if(argc != 3 || atoi(argv[1]) == 0 || atoi(argv[2]) == 0){ //verifica se o número de threads ou o tamanho da matriz são maiores que 0
         return 0;
     }
 
     TAM_MATRIZ = atoi(argv[1]);
-    NUM_THREADS = atoi(argv[2]);
+    NUM_THREADS = atoi(argv[2]); //as threads nesse caso só são usadas para inicialização das matrizes, os cálculos de multiplicação são todos singlethread
 
     int i;
     pthread_t threads[NUM_THREADS]; // Declara um array de threads do tipo pthread_t
@@ -60,6 +67,7 @@ int main(int argc, char *argv[]){
     //----------------------------------------------------------------------------------------------------------------------------
 
     srand(time(NULL)); // Inicializa a semente do gerador de números aleatórios com o tempo atual
+
     // Cria as threads para inicializar as matrizes A e B usando pthread_create
     for (i = 0; i < NUM_THREADS; i++) {
         pthread_create(&threads[i], NULL, &preencheMatriz, (void *)(long)i);
@@ -73,12 +81,12 @@ int main(int argc, char *argv[]){
     //----------------------------------------------------------------------------------------------------------------------------
 
     struct timespec inicio;
-    timespec_get(&inicio, TIME_UTC);
+    timespec_get(&inicio, TIME_UTC); // Obtém o tempo atual em UTC
 
-    multiplicaMatriz(); //n precisa passar como parametro
+    multiplicaMatriz();
 
     struct timespec fim;
-    timespec_get(&fim, TIME_UTC);
+    timespec_get(&fim, TIME_UTC); // Obtém o tempo atual em UTC
 
     double tempo_gasto = (fim.tv_sec - inicio.tv_sec) + (fim.tv_nsec - inicio.tv_nsec) / 1000000000.0;
 
