@@ -80,6 +80,32 @@ void kernel_trisolv(int n,
     }
 #pragma endscop
 
+/*for(int i =0;i<_PB_N;i++){
+  printf("|");
+  for(int j =0;j<_PB_N;j++){
+    printf("%.2f ",L[i][j]);
+    //sleep(1);
+  }
+  printf("|\n");
+}
+
+printf("\n\n\n");
+
+
+printf("Vetor B:\n");
+for(int i =0;i<_PB_N;i++){
+  printf("|");
+  printf("%.2f ",b[i]);
+}
+printf("|\n");
+
+printf("\nVetor Solucao:\n");
+for(int i =0;i<_PB_N;i++){
+  printf("|");
+  printf("%.2f ",x[i]);
+}
+printf("|\n");*/
+
 }
 
 
