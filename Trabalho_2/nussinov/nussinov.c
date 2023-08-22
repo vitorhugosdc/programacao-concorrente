@@ -106,6 +106,15 @@ void kernel_nussinov(int n, base POLYBENCH_1D(seq,N,n),
  }
 #pragma endscop
 
+   for(i = 0; i< _PB_N; i++) {
+      printf("|");
+      for(j = 0; j< _PB_N; j++) {
+         printf("%.2lf ", table[i][j]);
+      }
+      printf("|\n");
+   }
+
+   printf("\nRESULTADO: %.2lf\n", table[0][N-1]);
 }
 
 

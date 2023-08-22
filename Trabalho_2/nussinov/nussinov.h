@@ -18,7 +18,7 @@
 # if !defined(N)
 /* Define sample dataset sizes. */
 #  ifdef MINI_DATASET
-#   define N 60
+#   define N 10
 #  endif
 
 #  ifdef SMALL_DATASET
