@@ -30,7 +30,7 @@ pthread_barrier_t barrier;
 
 typedef struct {
     int num_thread;
-    int n;
+    int n; //talvez isso n~ao precise, ja existe o _PB_N com o tamanho de n
     base *seq;
     DATA_TYPE (*table)[N];
 } thread_args;
@@ -99,7 +99,7 @@ void *compute_diagonal(void *arg) {
     #pragma scop
 
     for (i = n-1; i >= 0; i--) {
-        for (j = i+1+num_thread; j < n; j += NUM_THREADS) {
+        for (j = i+1+num_thread; j < n; j += NUM_THREADS) { 
             if (j-1 >= 0)
                 table[i][j] = max_score(table[i][j], table[i][j-1]);
             if (i+1 < n)
@@ -120,6 +120,8 @@ void *compute_diagonal(void *arg) {
     }
 
     #pragma endscop
+
+    //o resultado esta correto, mas os numeros principalmente perto da direita estao errados, talvez seja so a maneira de resolver
 
     return NULL;
 }
@@ -146,13 +148,13 @@ void kernel_nussinov(int n, base POLYBENCH_1D(seq,N,n),
         pthread_join(threads[i], NULL);
     }
 
-    for(int i = 0; i< _PB_N; i++) {
+    /*for(int i = 0; i< _PB_N; i++) { //printa a tabela
       printf("|");
       for(int j = 0; j< _PB_N; j++) {
          printf("%.2lf ", table[i][j]);
       }
       printf("|\n");
-   }
+   }*/
 
    printf("\nRESULTADO: %.2lf\n", table[0][N-1]);
 }

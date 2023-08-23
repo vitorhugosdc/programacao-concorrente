@@ -1,0 +1,4 @@
+gcc -O3 polybench.c nussinov.c -DPOLYBENCH_TIME -DDATA_TYPE_IS_DOUBLE -DMINI_DATASET -o nussinov_time
+
+gcc -O3 polybench.c nussinov_paralelo.c -DPOLYBENCH_TIME -DDATA_TYPE_IS_DOUBLE -DMINI_DATASET -o nussinov_time
+
