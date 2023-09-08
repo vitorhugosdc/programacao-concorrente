@@ -24,7 +24,7 @@
 /* RNA bases represented as chars, range is [0,3] */
 typedef char base;
 
-#define NUM_THREADS 4
+int NUM_THREADS;
 
 pthread_barrier_t barrier;
 
@@ -162,6 +162,19 @@ void kernel_nussinov(int n, base POLYBENCH_1D(seq,N,n),
 
 int main(int argc, char** argv)
 {
+  if (argc < 2) {
+      fprintf(stderr, "Utilize o comando %s <numero_de_threads>\n", argv[0]);
+      return 1;
+  }
+
+  NUM_THREADS = atoi(argv[1]);
+
+  if (NUM_THREADS <= 0) {
+    fprintf(stderr, "O numero de threads deve ser maior que 0!\n");
+    return 1;
+  }
+
+
   /* Retrieve problem size. */
   int n = N;
 
