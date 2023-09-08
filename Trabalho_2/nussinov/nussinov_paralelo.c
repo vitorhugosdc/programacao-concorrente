@@ -13,7 +13,7 @@
 #include <unistd.h>
 #include <string.h>
 #include <math.h>
-#include<pthread.h>
+#include <pthread.h>
 
 /* Include polybench common header. */
 #include "polybench.h"
@@ -56,7 +56,6 @@ void init_array (int n,
        table[i][j] = 0;
 }
 
-
 /* DCE code. Must scan the entire live-out data.
    Can be used also to check the correctness of the output. */
 static
@@ -80,7 +79,6 @@ void print_array(int n,
   POLYBENCH_DUMP_FINISH;
 }
 
-
 /* Main computational kernel. The whole function will be timed,
    including the call and return. */
 /*
@@ -88,7 +86,7 @@ void print_array(int n,
   with help from Allison Lake, Ting Zhou, and Tian Jin,
   based on algorithm by Nussinov, described in Allison Lake's senior thesis.
 */
-void *compute_diagonal(void *arg) {
+void *kernel_nussinov(void *arg) {
     thread_args *args = (thread_args *)arg;
     int i, j, k;
     int num_thread = args->num_thread;
@@ -99,7 +97,7 @@ void *compute_diagonal(void *arg) {
     #pragma scop
 
     for (i = n-1; i >= 0; i--) {
-        for (j = i+1+num_thread; j < n; j += NUM_THREADS) { 
+        for (j = i+1+num_thread; j < n; j += NUM_THREADS) {
             if (j-1 >= 0)
                 table[i][j] = max_score(table[i][j], table[i][j-1]);
             if (i+1 < n)
@@ -121,47 +119,14 @@ void *compute_diagonal(void *arg) {
 
     #pragma endscop
 
-    //o resultado esta correto, mas os numeros principalmente perto da direita estao errados, talvez seja so a maneira de resolver
-
     return NULL;
 }
 
-static
-void kernel_nussinov(int n, base POLYBENCH_1D(seq,N,n),
-                     DATA_TYPE POLYBENCH_2D(table,N,N,n,n))
-{
-    pthread_t threads[NUM_THREADS];
-    thread_args args[NUM_THREADS];
-    int i;
-
-
-    pthread_barrier_init(&barrier, NULL, NUM_THREADS);
-    for (i = 0; i < NUM_THREADS; i++) {
-        args[i].num_thread = i;
-        args[i].n = n;
-        args[i].seq = seq;
-        args[i].table = table;
-        pthread_create(&threads[i], NULL, &compute_diagonal, &args[i]);
-    }
-
-    for (i = 0; i < NUM_THREADS; i++) {
-        pthread_join(threads[i], NULL);
-    }
-
-    /*for(int i = 0; i< _PB_N; i++) { //printa a tabela
-      printf("|");
-      for(int j = 0; j< _PB_N; j++) {
-         printf("%.2lf ", table[i][j]);
-      }
-      printf("|\n");
-   }*/
-
-   printf("\nRESULTADO: %.2lf\n", table[0][N-1]);
-}
-
-
 int main(int argc, char** argv)
 {
+  /* Start timer. */
+  polybench_start_instruments;
+
   if (argc < 2) {
       fprintf(stderr, "Utilize o comando %s <numero_de_threads>\n", argv[0]);
       return 1;
@@ -174,7 +139,6 @@ int main(int argc, char** argv)
     return 1;
   }
 
-
   /* Retrieve problem size. */
   int n = N;
 
@@ -185,15 +149,25 @@ int main(int argc, char** argv)
   /* Initialize array(s). */
   init_array (n, POLYBENCH_ARRAY(seq), POLYBENCH_ARRAY(table));
 
-  /* Start timer. */
-  polybench_start_instruments;
+  pthread_t threads[NUM_THREADS];
+  thread_args args[NUM_THREADS];
+  int i;
 
-  /* Run kernel. */
-  kernel_nussinov (n, POLYBENCH_ARRAY(seq), POLYBENCH_ARRAY(table));
+  pthread_barrier_init(&barrier, NULL, NUM_THREADS);
 
-  /* Stop and print timer. */
-  polybench_stop_instruments;
-  polybench_print_instruments;
+  for (i = 0; i < NUM_THREADS; i++) {
+      args[i].num_thread = i;
+      args[i].n = n;
+      args[i].seq = POLYBENCH_ARRAY(seq);
+      args[i].table = POLYBENCH_ARRAY(table);
+      pthread_create(&threads[i], NULL, &kernel_nussinov, &args[i]);
+  }
+
+  for (i = 0; i < NUM_THREADS; i++) {
+      pthread_join(threads[i], NULL);
+  }
+
+  printf("\nRESULTADO: " DATA_PRINTF_MODIFIER "\n", (*table)[0][N-1]);
 
   /* Prevent dead-code elimination. All live-out data must be printed
      by the function call in argument. */
@@ -202,6 +176,10 @@ int main(int argc, char** argv)
   /* Be clean. */
   POLYBENCH_FREE_ARRAY(seq);
   POLYBENCH_FREE_ARRAY(table);
+
+  /* Stop and print timer. */
+  polybench_stop_instruments;
+  polybench_print_instruments;
 
   return 0;
 }

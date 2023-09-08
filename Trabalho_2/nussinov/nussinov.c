@@ -44,7 +44,6 @@ void init_array (int n,
        table[i][j] = 0;
 }
 
-
 /* DCE code. Must scan the entire live-out data.
    Can be used also to check the correctness of the output. */
 static
@@ -106,20 +105,14 @@ void kernel_nussinov(int n, base POLYBENCH_1D(seq,N,n),
  }
 #pragma endscop
 
-   /*for(i = 0; i< _PB_N; i++) { //printa a tabela
-      printf("|");
-      for(j = 0; j< _PB_N; j++) {
-         printf("%.2lf ", table[i][j]);
-      }
-      printf("|\n");
-   }*/
-
-   printf("\nRESULTADO: %.2lf\n", table[0][N-1]);
 }
 
 
 int main(int argc, char** argv)
 {
+   /* Start timer. */
+  polybench_start_instruments;
+
   /* Retrieve problem size. */
   int n = N;
 
@@ -128,18 +121,21 @@ int main(int argc, char** argv)
   POLYBENCH_2D_ARRAY_DECL(table, DATA_TYPE, N, N, n, n);
 
   /* Initialize array(s). */
-  init_array (n, POLYBENCH_ARRAY(seq), POLYBENCH_ARRAY(table));
-
-  /* Start timer. */
-  polybench_start_instruments;
+  init_array (n, POLYBENCH_ARRAY(seq), POLYBENCH_ARRAY(table));  
 
   /* Run kernel. */
   kernel_nussinov (n, POLYBENCH_ARRAY(seq), POLYBENCH_ARRAY(table));
 
-  /* Stop and print timer. */
-  polybench_stop_instruments;
-  polybench_print_instruments;
+  /*for(i = 0; i< _PB_N; i++) { //printa a tabela
+      printf("|");
+      for(j = 0; j< _PB_N; j++) {
+         printf("%.2lf ", (*table)[i][j]);
+      }
+      printf("|\n");
+   }*/
 
+  printf("\nRESULTADO: %.2lf\n", (*table)[0][N-1]);
+  
   /* Prevent dead-code elimination. All live-out data must be printed
      by the function call in argument. */
   polybench_prevent_dce(print_array(n, POLYBENCH_ARRAY(table)));
@@ -147,6 +143,10 @@ int main(int argc, char** argv)
   /* Be clean. */
   POLYBENCH_FREE_ARRAY(seq);
   POLYBENCH_FREE_ARRAY(table);
+
+  /* Stop and print timer. */
+  polybench_stop_instruments;
+  polybench_print_instruments;
 
   return 0;
 }
