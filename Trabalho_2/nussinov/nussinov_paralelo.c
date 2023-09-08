@@ -26,13 +26,14 @@ typedef char base;
 
 int NUM_THREADS;
 
+DATA_TYPE table[N][N];
+
 pthread_barrier_t barrier;
 
 typedef struct {
     int num_thread;
     int n; //talvez isso n~ao precise, ja existe o _PB_N com o tamanho de n
     base *seq;
-    DATA_TYPE (*table)[N];
 } thread_args;
 
 #define match(b1, b2) (((b1)+(b2)) == 3 ? 1 : 0)
@@ -92,7 +93,6 @@ void *kernel_nussinov(void *arg) {
     int num_thread = args->num_thread;
     int n = args->n;
     base *seq = args->seq;
-    DATA_TYPE (*table)[N] = args->table;
 
     #pragma scop
 
@@ -159,7 +159,6 @@ int main(int argc, char** argv)
       args[i].num_thread = i;
       args[i].n = n;
       args[i].seq = POLYBENCH_ARRAY(seq);
-      args[i].table = POLYBENCH_ARRAY(table);
       pthread_create(&threads[i], NULL, &kernel_nussinov, &args[i]);
   }
 
@@ -167,7 +166,7 @@ int main(int argc, char** argv)
       pthread_join(threads[i], NULL);
   }
 
-  printf("\nRESULTADO: " DATA_PRINTF_MODIFIER "\n", (*table)[0][N-1]);
+  printf("\nRESULTADO: " DATA_PRINTF_MODIFIER "\n", *table[0][N-1]); //nao ta imprimindo certo, mesmo que o resultado esteja correto
 
   /* Prevent dead-code elimination. All live-out data must be printed
      by the function call in argument. */
