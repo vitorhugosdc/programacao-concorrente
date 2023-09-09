@@ -5,4 +5,7 @@ Trabalho_2/polybench-c-4.2.1-beta/
 Trabalho_1/.vscode/
 Trabalho_1/Curso Ponteiros em C/
 .vscode/
-
+Trabalho_2/nussinov/nussinov_time
+Trabalho_2/nussinov/nussinov_MPI_time
+Trabalho_2/nussinov/nussinov_MPI
+Trabalho_2/nussinov/nussinov_pthreads_time

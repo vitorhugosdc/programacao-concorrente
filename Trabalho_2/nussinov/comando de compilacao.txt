@@ -1,4 +1,14 @@
+SINGLETHREAD
+
 gcc -O3 polybench.c nussinov.c -DPOLYBENCH_TIME -DDATA_TYPE_IS_DOUBLE -DMINI_DATASET -o nussinov_time
 
-gcc -O3 polybench.c nussinov_paralelo.c -DPOLYBENCH_TIME -DDATA_TYPE_IS_DOUBLE -DMINI_DATASET -o nussinov_time
+PTHREADS
+
+gcc -O3 polybench.c nussinov_paralelo.c -DPOLYBENCH_TIME -DDATA_TYPE_IS_DOUBLE -DMINI_DATASET -o nussinov_pthreads_time
+
+MPI
+
+mpicc -O3 polybench.c nussinov_MPI.c -DPOLYBENCH_TIME -DDATA_TYPE_IS_DOUBLE -DMINI_DATASET -o nussinov_MPI_time
+
+mpiexec -np 4 ./nussinov_MPI_time
 
