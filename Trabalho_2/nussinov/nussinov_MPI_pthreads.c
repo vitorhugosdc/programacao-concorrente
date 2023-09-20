@@ -124,14 +124,26 @@ int main(int argc, char** argv)
     /* Initialize array(s). */
     init_array(n, POLYBENCH_ARRAY(seq), POLYBENCH_ARRAY(table));
     
-    int rank, num_processes;
+    int rank, num_processes, num_cores;
+    num_cores = sysconf(_SC_NPROCESSORS_ONLN);
 
     MPI_Init(&argc, &argv);
     MPI_Comm_rank(MPI_COMM_WORLD, &rank);
     MPI_Comm_size(MPI_COMM_WORLD, &num_processes);
 
-    NUM_THREADS_PER_PROCESS = 1;
+    /*if ((num_processes * 2) > num_cores) {
+        if (rank == 0) { // Printe apenas uma vez
+        printf("Erro: O número total de processos e threads excede o número de núcleos disponíveis. Encerrando...\n");
+        }
+    MPI_Finalize();
+    return 1;  // Encerra a execução
+    }*/
 
+    NUM_THREADS_PER_PROCESS = (num_cores / num_processes) - 1;
+
+    if(NUM_THREADS_PER_PROCESS < 1){
+        NUM_THREADS_PER_PROCESS = 1;
+    }
 
     pthread_t threads[NUM_THREADS_PER_PROCESS];
     hybrid_args args[NUM_THREADS_PER_PROCESS];
