@@ -4,7 +4,7 @@ gcc -O3 polybench.c nussinov.c -DPOLYBENCH_TIME -DDATA_TYPE_IS_DOUBLE -DMINI_DAT
 
 PTHREADS
 
-gcc -O3 polybench.c nussinov_paralelo.c -DPOLYBENCH_TIME -DDATA_TYPE_IS_DOUBLE -DMINI_DATASET -o nussinov_pthreads_time
+gcc -O3 polybench.c nussinov_pthreads.c -DPOLYBENCH_TIME -DDATA_TYPE_IS_DOUBLE -DMINI_DATASET -o nussinov_pthreads_time
 
 MPI
 
@@ -12,3 +12,8 @@ mpicc -O3 polybench.c nussinov_MPI.c -DPOLYBENCH_TIME -DDATA_TYPE_IS_DOUBLE -DMI
 
 mpiexec -np 4 ./nussinov_MPI_time
 
+MPI + THREADS
+
+mpicc -O3 polybench.c nussinov_MPI_pthreads.c -DPOLYBENCH_TIME -DDATA_TYPE_IS_DOUBLE -DMINI_DATASET -o nussinov_MPI_pthreads_time
+
+mpiexec -np 4 ./nussinov_MPI_pthreads_time

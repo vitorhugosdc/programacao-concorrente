@@ -136,8 +136,6 @@ int main(int argc, char** argv)
   MPI_Comm_rank(MPI_COMM_WORLD, &rank);
   MPI_Comm_size(MPI_COMM_WORLD, &num_processes);
 
-  init_array (n, POLYBENCH_ARRAY(seq), POLYBENCH_ARRAY(table));
-
   kernel_nussinov (n, POLYBENCH_ARRAY(seq), POLYBENCH_ARRAY(table));
 
   //MPI_Finalize();
