@@ -1,19 +1,23 @@
 SINGLETHREAD
 
-gcc -O3 polybench.c nussinov.c -DPOLYBENCH_TIME -DDATA_TYPE_IS_DOUBLE -DMINI_DATASET -o nussinov_time
+gcc -O3 polybench.c nussinov_seq.c -DPOLYBENCH_TIME -DDATA_TYPE_IS_DOUBLE -DMINI_DATASET -o nussinov_seq
 
 PTHREADS
 
-gcc -O3 polybench.c nussinov_pthreads.c -DPOLYBENCH_TIME -DDATA_TYPE_IS_DOUBLE -DMINI_DATASET -o nussinov_pthreads_time
+gcc -O3 polybench.c nussinov_pthreads.c -DPOLYBENCH_TIME -DDATA_TYPE_IS_DOUBLE -DMINI_DATASET -o nussinov_pthreads
 
 MPI
 
-mpicc -O3 polybench.c nussinov_MPI.c -DPOLYBENCH_TIME -DDATA_TYPE_IS_DOUBLE -DMINI_DATASET -o nussinov_MPI_time
+mpicc -O3 polybench.c nussinov_MPI.c -DPOLYBENCH_TIME -DDATA_TYPE_IS_DOUBLE -DMINI_DATASET -o nussinov_MPI
 
-mpiexec -np 4 ./nussinov_MPI_time
+mpiexec -np 4 ./nussinov_MPI
+
+mpiexec -np 4 ./nussinov_MPI -d medium
 
 MPI + THREADS
 
-mpicc -O3 polybench.c nussinov_MPI_pthreads.c -DPOLYBENCH_TIME -DDATA_TYPE_IS_DOUBLE -DMINI_DATASET -o nussinov_MPI_pthreads_time
+mpicc -O3 polybench.c nussinov_MPI_pthreads.c -DPOLYBENCH_TIME -DDATA_TYPE_IS_DOUBLE -DMINI_DATASET -o nussinov_MPI_pthreads
 
-mpiexec -np 4 ./nussinov_MPI_pthreads_time
+mpiexec -np 4 ./nussinov_MPI_pthreads
+
+mpiexec -np 1 ./nussinov_MPI_pthreads -d medium

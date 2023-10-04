@@ -2,41 +2,100 @@
 #include <unistd.h>
 #include <string.h>
 #include <math.h>
+#include <argp.h>
+#include <stdlib.h>
 #include <mpi.h>
 #include <pthread.h>
 
-/* Include polybench common header. */
 #include "polybench.h"
 
-/* Include benchmark-specific header. */
-#include "nussinov.h"
+struct arguments {
+    int size;    // tamanho da matriz
+    int debug;   // debug
+};
 
+static struct argp_option options[] = {
+    {"size", 'd', "SIZE", 0, "Specify matrix size (small, medium, or large)"},
+    {"debug", 'D', 0, 0, "Print debug information"},
+    {"help", 'h', 0, 0, "Show help message"},
+    {0}
+};
+
+static error_t parse_opt(int key, char *arg, struct argp_state *state) {
+    struct arguments *arguments = state->input;
+
+    switch (key) {
+        case 'd':
+            if (strcmp(arg, "small") == 0)
+                arguments->size = 10;
+            else if (strcmp(arg, "medium") == 0)
+                arguments->size = 4000;
+            else if (strcmp(arg, "large") == 0)
+                arguments->size = 4096;
+            else {
+                fprintf(stderr, "Tamanho especificado não é válido: %s\n", arg);
+                return ARGP_ERR_UNKNOWN;
+            }
+            break;
+        case 'D':
+            arguments->debug = 1;
+            break;
+        case 'h':
+            argp_state_help(state, stdout, ARGP_HELP_STD_HELP);
+            break;
+        case ARGP_KEY_ARG:
+            return 0;
+        default:
+            return ARGP_ERR_UNKNOWN;
+    }
+    return 0;
+}
+
+static struct argp argp = {options, parse_opt, NULL, "NUSSINOV Description"};
 /* RNA bases represented as chars, range is [0,3] */
 typedef char base;
-
-int NUM_THREADS_PER_PROCESS;
-
-pthread_barrier_t barrier;
 
 typedef struct {
     int thread_id;
     int rank;
     int n;
     base *seq;
-    DATA_TYPE (*table)[N];
+    double **table;
 } hybrid_args;
+
+base *seq;
+double **table;
+
+int NUM_THREADS_PER_PROCESS;
+pthread_barrier_t barrier;
 
 #define match(b1, b2) (((b1)+(b2)) == 3 ? 1 : 0)
 #define max_score(s1, s2) ((s1 >= s2) ? s1 : s2)
 
-static
-void init_array (int n,
-                 base POLYBENCH_1D(seq,N,n),
-		 DATA_TYPE POLYBENCH_2D(table,N,N,n,n))
+void allocateMatrix(int n)
 {
+    seq = (base *)malloc(n * sizeof(base));
+    table = (double **)malloc(n * sizeof(double *));
+    for (int i = 0; i < n; i++)
+    {
+        table[i] = (double *)malloc(n * sizeof(double));
+    }
+}
+
+void freeMatrix(int n)
+{
+    for (int i = 0; i < n; i++)
+    {
+        free(table[i]);
+    }
+    free(table);
+    free(seq);
+}
+
+/* Array initialization. */
+static void init_array(int n) {
     int i, j;
 
-    //base is AGCT/0..3
     for (i = 0; i < n; i++) {
         seq[i] = (base)((i + 1) % 4);
     }
@@ -46,27 +105,15 @@ void init_array (int n,
             table[i][j] = 0;
 }
 
-/* DCE code. Must scan the entire live-out data.
-   Can be used also to check the correctness of the output. */
-static
-void print_array(int n,
-		 DATA_TYPE POLYBENCH_2D(table,N,N,n,n))
+static void print_array(int n) {
+    int i, j;
 
-{
-  int i, j;
-  int t = 0;
-
-  POLYBENCH_DUMP_START;
-  POLYBENCH_DUMP_BEGIN("table");
-  for (i = 0; i < n; i++) {
-    for (j = i; j < n; j++) {
-      if (t % 20 == 0) fprintf (POLYBENCH_DUMP_TARGET, "\n");
-      fprintf (POLYBENCH_DUMP_TARGET, DATA_PRINTF_MODIFIER, table[i][j]);
-      t++;
+    for (i = 0; i < n; i++) {
+        for (j = i; j < n; j++) {
+            fprintf(stdout, "%.2lf ", table[i][j]);
+        }
+        fprintf(stdout, "\n");
     }
-  }
-  POLYBENCH_DUMP_END("table");
-  POLYBENCH_DUMP_FINISH;
 }
 
 void *hybrid_nussinov(void *arg) {
@@ -75,8 +122,6 @@ void *hybrid_nussinov(void *arg) {
     int num_processes;
     int num_thread = args->thread_id;
     int n = args->n;
-    base *seq = args->seq;
-    DATA_TYPE (*table)[N] = args->table;
 
     MPI_Comm_size(MPI_COMM_WORLD, &num_processes);
 
@@ -107,54 +152,53 @@ void *hybrid_nussinov(void *arg) {
             }
         }
     }
+
     return NULL;
 }
 
-int main(int argc, char** argv)
-{
-    /* Start timer. */
+int main(int argc, char **argv) {
+
     polybench_start_instruments;
-    /* Retrieve problem size. */
-    int n = N;
-
-    /* Variable declaration/allocation. */
-    POLYBENCH_1D_ARRAY_DECL(seq, base, N, n);
-    POLYBENCH_2D_ARRAY_DECL(table, DATA_TYPE, N, N, n, n);
-
-    /* Initialize array(s). */
-    init_array(n, POLYBENCH_ARRAY(seq), POLYBENCH_ARRAY(table));
+    int rank, num_processes;
     
-    int rank, num_processes, num_cores;
-    num_cores = sysconf(_SC_NPROCESSORS_ONLN);
+    struct arguments arguments;
+    arguments.size = 0;
+    arguments.debug = 0;
+
+    argp_parse(&argp, argc, argv, 0, 0, &arguments);
+
+    if (!arguments.size) {
+        fprintf(stderr, "O argumento -d é obrigatório. Use -h para ver os comandos.\n");
+        exit(1);
+    }
+
+    int n = arguments.size;
+
+    allocateMatrix(n);
+    init_array(n);
 
     MPI_Init(&argc, &argv);
     MPI_Comm_rank(MPI_COMM_WORLD, &rank);
     MPI_Comm_size(MPI_COMM_WORLD, &num_processes);
 
-    /*if ((num_processes * 2) > num_cores) {
-        if (rank == 0) { // Printe apenas uma vez
-        printf("Erro: O número total de processos e threads excede o número de núcleos disponíveis. Encerrando...\n");
-        }
-    MPI_Finalize();
-    return 1;  // Encerra a execução
-    }*/
-
+    int num_cores = sysconf(_SC_NPROCESSORS_ONLN);
     NUM_THREADS_PER_PROCESS = (num_cores / num_processes) - 1;
 
-    if(NUM_THREADS_PER_PROCESS < 1){
+    if (NUM_THREADS_PER_PROCESS < 1) {
         NUM_THREADS_PER_PROCESS = 1;
     }
 
     pthread_t threads[NUM_THREADS_PER_PROCESS];
     hybrid_args args[NUM_THREADS_PER_PROCESS];
+
     pthread_barrier_init(&barrier, NULL, NUM_THREADS_PER_PROCESS);
 
     for (int t = 0; t < NUM_THREADS_PER_PROCESS; t++) {
         args[t].thread_id = t;
         args[t].rank = rank;
         args[t].n = n;
-        args[t].seq = POLYBENCH_ARRAY(seq);
-        args[t].table = POLYBENCH_ARRAY(table);
+        args[t].seq = seq;
+        args[t].table = table;
         pthread_create(&threads[t], NULL, hybrid_nussinov, &args[t]);
     }
 
@@ -163,21 +207,12 @@ int main(int argc, char** argv)
     }
 
     if (rank == 0) {
-        printf("\nRESULTADO: " DATA_PRINTF_MODIFIER "\n", (*table)[0][N-1]);
+        printf("\nRESULTADO: %.2lf\n", table[0][n - 1]);
     }
 
-    /* Prevent dead-code elimination. All live-out data must be printed
-    by the function call in argument. */
-    polybench_prevent_dce(print_array(n, POLYBENCH_ARRAY(table)));
-
-    /* Be clean. */
-    POLYBENCH_FREE_ARRAY(seq);
-    POLYBENCH_FREE_ARRAY(table);
-
+    freeMatrix(n);
     MPI_Finalize();
-    if(rank == 0){
-        polybench_stop_instruments;    
-        polybench_print_instruments;
-    }
+    polybench_stop_instruments;
+    polybench_print_instruments;
     return 0;
 }

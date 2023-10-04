@@ -1,84 +1,107 @@
-/**
- * This version is stamped on May 10, 2016
- *
- * Contact:
- *   Louis-Noel Pouchet <pouchet.ohio-state.edu>
- *   Tomofumi Yuki <tomofumi.yuki.fr>
- *
- * Web address: http://polybench.sourceforge.net
- */
-/* nussinov.c: this file is part of PolyBench/C */
-
 #include <stdio.h>
-#include <unistd.h>
 #include <string.h>
 #include <math.h>
+#include <argp.h>
+#include <stdlib.h>
 #include <mpi.h>
 
-/* Include polybench common header. */
 #include "polybench.h"
 
-/* Include benchmark-specific header. */
-#include "nussinov.h"
+/* Definição dos argumentos e suas opções */
+struct arguments {
+    int size;    // tamanho da matriz
+    int debug;   // debug
+};
+
+static struct argp_option options[] = {
+    {"size", 'd', "SIZE", 0, "Specify matrix size (small, medium, or large)"},
+    {"debug", 'D', 0, 0, "Print debug information"},
+    {"help", 'h', 0, 0, "Show help message"},
+    {0}
+};
+
+static error_t parse_opt(int key, char *arg, struct argp_state *state) {
+    struct arguments *arguments = state->input;
+
+    switch (key) {
+        case 'd':
+            if (strcmp(arg, "small") == 0)
+                arguments->size = 10;
+            else if (strcmp(arg, "medium") == 0)
+                arguments->size = 4000;
+            else if (strcmp(arg, "large") == 0)
+                arguments->size = 4096;
+            else {
+                fprintf(stderr, "Tamanho especificado não é válido: %s\n", arg);
+                return ARGP_ERR_UNKNOWN;
+            }
+            break;
+        case 'D':
+            arguments->debug = 1;
+            break;
+        case 'h':
+            argp_state_help(state, stdout, ARGP_HELP_STD_HELP);
+            break;
+        case ARGP_KEY_ARG:
+            return 0;
+        default:
+            return ARGP_ERR_UNKNOWN;
+    }
+    return 0;
+}
+
+static struct argp argp = {options, parse_opt, NULL, "NUSSINOV Description"};
 
 /* RNA bases represented as chars, range is [0,3] */
 typedef char base;
 
-int NUM_THREADS;
+base *seq;
+double **table;
 
 #define match(b1, b2) (((b1)+(b2)) == 3 ? 1 : 0)
 #define max_score(s1, s2) ((s1 >= s2) ? s1 : s2)
 
-/* Array initialization. */
-static
-void init_array (int n,
-                 base POLYBENCH_1D(seq,N,n),
-		 DATA_TYPE POLYBENCH_2D(table,N,N,n,n))
-{
-  int i, j;
-
-  //base is AGCT/0..3
-  for (i=0; i <n; i++) {
-     seq[i] = (base)((i+1)%4);
-  }
-
-  for (i=0; i <n; i++)
-     for (j=0; j <n; j++)
-       table[i][j] = 0;
-}
-
-/* DCE code. Must scan the entire live-out data.
-   Can be used also to check the correctness of the output. */
-static
-void print_array(int n,
-		 DATA_TYPE POLYBENCH_2D(table,N,N,n,n))
-
-{
-  int i, j;
-  int t = 0;
-
-  POLYBENCH_DUMP_START;
-  POLYBENCH_DUMP_BEGIN("table");
-  for (i = 0; i < n; i++) {
-    for (j = i; j < n; j++) {
-      if (t % 20 == 0) fprintf (POLYBENCH_DUMP_TARGET, "\n");
-      fprintf (POLYBENCH_DUMP_TARGET, DATA_PRINTF_MODIFIER, table[i][j]);
-      t++;
+void allocateMatrix(int n) {
+    seq = (base *)malloc(n * sizeof(base));
+    table = (double **)malloc(n * sizeof(double *));
+    for (int i = 0; i < n; i++) {
+        table[i] = (double *)malloc(n * sizeof(double));
     }
-  }
-  POLYBENCH_DUMP_END("table");
-  POLYBENCH_DUMP_FINISH;
 }
 
-/* Main computational kernel. The whole function will be timed,
-   including the call and return. */
-/*
-  Original version by Dave Wonnacott at Haverford College <davew@cs.haverford.edu>,
-  with help from Allison Lake, Ting Zhou, and Tian Jin,
-  based on algorithm by Nussinov, described in Allison Lake's senior thesis.
-*/
+void freeMatrix(int n) {
+    for (int i = 0; i < n; i++) {
+        free(table[i]);
+    }
+    free(table);
+    free(seq);
+}
 
-void kernel_nussinov(int n, base *seq, DATA_TYPE (*table)[N]) {
+/* Array initialization. */
+static void init_array(int n) {
+    int i, j;
+
+    for (i = 0; i < n; i++) {
+        seq[i] = (base)((i + 1) % 4);
+    }
+
+    for (i = 0; i < n; i++)
+        for (j = 0; j < n; j++)
+            table[i][j] = 0;
+}
+
+static void print_array(int n) {
+    int i, j;
+
+    for (i = 0; i < n; i++) {
+        for (j = i; j < n; j++) {
+            fprintf(stdout, "%.2lf ", table[i][j]);
+        }
+        fprintf(stdout, "\n");
+    }
+}
+
+void kernel_nussinov(int n) {
     int i, j, k;
     int rank, num_processes;
     
@@ -94,7 +117,7 @@ void kernel_nussinov(int n, base *seq, DATA_TYPE (*table)[N]) {
 
             if (j-1 >= 0 && i+1 < n) {
                 if (i < j-1)
-                    table[i][j] = max_score(table[i][j], table[i+1][j-1]+match(seq[i], seq[j]));
+                    table[i][j] = max_score(table[i][j], table[i+1][j-1] + match(seq[i], seq[j]));
                 else
                     table[i][j] = max_score(table[i][j], table[i+1][j-1]);
             }
@@ -104,59 +127,50 @@ void kernel_nussinov(int n, base *seq, DATA_TYPE (*table)[N]) {
             }
         }
 
-        // Faz o broadcast dos itens calculados
         for (int src = 0; src < num_processes; src++) {
             for (j = i+1+src; j < n; j += num_processes) {
                 MPI_Bcast(&table[i][j], 1, MPI_DOUBLE, src, MPI_COMM_WORLD);
             }
         }
-        //MPI_Barrier(MPI_COMM_WORLD); //parece que nao precisa por algum motivo mas nao faz diferenca no tempo
     }
 }
 
+int main(int argc, char** argv) {
+    polybench_start_instruments;
 
-int main(int argc, char** argv)
-{
-  /* Start timer. */
-  polybench_start_instruments;
-  /* Retrieve problem size. */
-  int n = N;
+    struct arguments arguments;
+    arguments.size = 0;
+    arguments.debug = 0;
 
-  /* Variable declaration/allocation. */
-  POLYBENCH_1D_ARRAY_DECL(seq, base, N, n);
-  POLYBENCH_2D_ARRAY_DECL(table, DATA_TYPE, N, N, n, n);
+    argp_parse(&argp, argc, argv, 0, 0, &arguments);
 
-  /* Initialize array(s). */
-  init_array (n, POLYBENCH_ARRAY(seq), POLYBENCH_ARRAY(table));
+    if (!arguments.size) {
+        fprintf(stderr, "O argumento -d é obrigatório. Use -h para ver os comandos.\n");
+        exit(1);
+    }
 
-  int rank, num_processes;
-  //base seq[N];
+    int n = arguments.size;
 
-  MPI_Init(&argc, &argv);
-  MPI_Comm_rank(MPI_COMM_WORLD, &rank);
-  MPI_Comm_size(MPI_COMM_WORLD, &num_processes);
+    allocateMatrix(n);
+    init_array(n);
 
-  kernel_nussinov (n, POLYBENCH_ARRAY(seq), POLYBENCH_ARRAY(table));
+    int rank;
+    MPI_Init(&argc, &argv);
 
-  //MPI_Finalize();
+    kernel_nussinov(n);
 
-  if (rank == 0) {
-      printf("\nRESULTADO: " DATA_PRINTF_MODIFIER "\n", (*table)[0][N-1]);
-  }
-  //MPI_Finalize();
-  /* Prevent dead-code elimination. All live-out data must be printed
-     by the function call in argument. */
-  polybench_prevent_dce(print_array(n, POLYBENCH_ARRAY(table)));
+    MPI_Comm_rank(MPI_COMM_WORLD, &rank);
 
-  /* Be clean. */
-  POLYBENCH_FREE_ARRAY(seq);
-  POLYBENCH_FREE_ARRAY(table);
-
-  /* Stop and print timer. */
-  MPI_Finalize();
-  if(rank == 0){
-    polybench_stop_instruments;    
+    if (rank == 0) {
+      printf("\nRESULTADO: %.2lf\n", table[0][n-1]);
+      if (arguments.debug) {
+        print_array(n);
+      }
+    }
+    freeMatrix(n);
+    MPI_Finalize();
+    
+    polybench_stop_instruments;
     polybench_print_instruments;
-  }
-  return 0;
+    return 0;
 }
