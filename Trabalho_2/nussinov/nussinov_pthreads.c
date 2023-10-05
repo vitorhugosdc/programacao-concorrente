@@ -31,11 +31,11 @@ static error_t parse_opt(int key, char *arg, struct argp_state *state)
     {
     case 'd':
         if (strcmp(arg, "small") == 0)
-            arguments->size = 10;
+            arguments->size = 5700;
         else if (strcmp(arg, "medium") == 0)
-            arguments->size = 4000;
+            arguments->size = 7075;
         else if (strcmp(arg, "large") == 0)
-            arguments->size = 4096;
+            arguments->size = 7900;
         else
         {
             fprintf(stderr, "Tamanho especificado não é válido: %s\n", arg);
@@ -162,7 +162,6 @@ void *kernel_nussinov(void *arg)
                 table[i][j] = max_score(table[i][j], table[i][k] + table[k + 1][j]);
             }
         }
-        //printf("\n%.2f\n",table[i][j]);
         pthread_barrier_wait(&barrier);
     }
 
@@ -175,7 +174,7 @@ int main(int argc, char **argv)
     struct arguments arguments;
     arguments.size = 0;
     arguments.debug = 0;
-    arguments.num_threads = 0;
+    arguments.num_threads = 1;
 
     argp_parse(&argp, argc, argv, 0, 0, &arguments);
 
@@ -185,11 +184,11 @@ int main(int argc, char **argv)
         exit(1);
     }
 
-    if (!arguments.num_threads)
+    /*if (!arguments.num_threads)
     {
         fprintf(stderr, "O argumento -t é obrigatório e deve ser maior que 0. Use -h para ver os comandos.\n");
         exit(1);
-    }
+    }*/
 
     int n = arguments.size;
     NUM_THREADS = arguments.num_threads;

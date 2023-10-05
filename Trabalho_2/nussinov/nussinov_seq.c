@@ -27,11 +27,11 @@ static error_t parse_opt(int key, char *arg, struct argp_state *state)
     {
     case 'd':
         if (strcmp(arg, "small") == 0)
-            arguments->size = 10;
+            arguments->size = 5700;
         else if (strcmp(arg, "medium") == 0)
-            arguments->size = 4000;
+            arguments->size = 7075;
         else if (strcmp(arg, "large") == 0)
-            arguments->size = 4096;
+            arguments->size = 7900;
         else
         {
             fprintf(stderr, "Tamanho especificado não é válido: %s\n", arg);

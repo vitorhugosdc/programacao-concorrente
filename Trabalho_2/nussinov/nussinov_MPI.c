@@ -26,12 +26,13 @@ static error_t parse_opt(int key, char *arg, struct argp_state *state) {
     switch (key) {
         case 'd':
             if (strcmp(arg, "small") == 0)
-                arguments->size = 10;
+                arguments->size = 5700;
             else if (strcmp(arg, "medium") == 0)
-                arguments->size = 4000;
+                arguments->size = 7075;
             else if (strcmp(arg, "large") == 0)
-                arguments->size = 4096;
-            else {
+                arguments->size = 7900;
+            else
+            {
                 fprintf(stderr, "Tamanho especificado não é válido: %s\n", arg);
                 return ARGP_ERR_UNKNOWN;
             }
@@ -126,7 +127,6 @@ void kernel_nussinov(int n) {
                 table[i][j] = max_score(table[i][j], table[i][k] + table[k+1][j]);
             }
         }
-
         for (int src = 0; src < num_processes; src++) {
             for (j = i+1+src; j < n; j += num_processes) {
                 MPI_Bcast(&table[i][j], 1, MPI_DOUBLE, src, MPI_COMM_WORLD);
