@@ -155,7 +155,7 @@ void *kernel_nussinov(void *arg) {
             }
         }
         pthread_barrier_wait(&barrier);
-        MPI_Barrier(MPI_COMM_WORLD);
+        //MPI_Barrier(MPI_COMM_WORLD);        
         for (int src = 0; src < num_processes; src++) {
             for (j = i+1+src; j < n; j += num_processes) {
                 MPI_Bcast(&table[i][j], 1, MPI_DOUBLE, src, MPI_COMM_WORLD);
