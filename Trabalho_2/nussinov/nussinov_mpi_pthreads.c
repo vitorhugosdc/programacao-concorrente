@@ -29,11 +29,11 @@ static error_t parse_opt(int key, char *arg, struct argp_state *state) {
     switch (key) {
         case 'd':
             if (strcmp(arg, "small") == 0)
-                arguments->size = 5700;
+                arguments->size = 7260;
             else if (strcmp(arg, "medium") == 0)
-                arguments->size = 7075;
+                arguments->size = 8800;
             else if (strcmp(arg, "large") == 0)
-                arguments->size = 7900;
+                arguments->size = 9950;
             else
             {
                 fprintf(stderr, "Tamanho especificado não é válido: %s\n", arg);
@@ -155,7 +155,8 @@ void *kernel_nussinov(void *arg) {
             }
         }
         pthread_barrier_wait(&barrier);
-        //MPI_Barrier(MPI_COMM_WORLD);        
+        MPI_Barrier(MPI_COMM_WORLD);
+        //printf("\ntable[%d][%d] = %.2f",i,j,table[i][j]);       
         for (int src = 0; src < num_processes; src++) {
             for (j = i+1+src; j < n; j += num_processes) {
                 MPI_Bcast(&table[i][j], 1, MPI_DOUBLE, src, MPI_COMM_WORLD);
@@ -199,9 +200,10 @@ int main(int argc, char **argv) {
 
     NUM_THREADS_PER_PROCESS = arguments.num_threads;
 
-    if (NUM_THREADS_PER_PROCESS < 1) {
+    /*if(NUM_THREADS_PER_PROCESS < 1){
         NUM_THREADS_PER_PROCESS = 1;
-    }
+    }*/
+
     pthread_t threads[NUM_THREADS_PER_PROCESS];
     hybrid_args args[NUM_THREADS_PER_PROCESS];
 

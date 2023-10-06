@@ -1,6 +1,6 @@
 #!/bin/bash
 
-programa="./nussinov_MPI_pthreads"
+programa="./nussinov_mpi_pthreads"
 quantidade=$4
 
 for (( i=1; i<=quantidade; i++ )); do

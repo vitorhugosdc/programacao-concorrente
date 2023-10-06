@@ -1,6 +1,6 @@
 #!/bin/bash
 
-programa="./nussinov_MPI"
+programa="./nussinov_mpi"
 quantidade=$3 #terceiro argumento passado
 
 for (( i=1; i<=quantidade; i++ )); do
