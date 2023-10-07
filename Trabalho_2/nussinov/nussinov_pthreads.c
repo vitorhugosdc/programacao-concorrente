@@ -7,19 +7,18 @@
 
 #include "polybench.h"
 
-/* Definição dos argumentos e suas opções */
 struct arguments
 {
-    int size;    // tamanho da matriz
-    int debug;   // debug
-    int num_threads; // número de threads
+    int size;
+    int debug;
+    int num_threads;
 };
 
 static struct argp_option options[] = {
     {"size", 'd', "SIZE", 0, "Specify matrix size (small, medium, or large)"},
-    {"debug", 'D', 0, 0, "Print debug information"},
+    {"debug", 'D', 0, 0, "Print entire resultant matrix"},
     {"threads", 't', "NUM", 0, "Number of threads"},
-    {"help", 'h', 0, 0, "Show help message"},
+    {"help", 'h', 0, 0, "Show this help message"},
     {0}
 };
 
@@ -38,7 +37,7 @@ static error_t parse_opt(int key, char *arg, struct argp_state *state)
             arguments->size = 9950;
         else
         {
-            fprintf(stderr, "Tamanho especificado não é válido: %s\n", arg);
+            fprintf(stderr, "Size is not a valid option: %s\n", arg);
             return ARGP_ERR_UNKNOWN;
         }
         break;
@@ -49,7 +48,7 @@ static error_t parse_opt(int key, char *arg, struct argp_state *state)
         arguments->num_threads = atoi(arg);
         if (arguments->num_threads <= 0)
         {
-            fprintf(stderr, "O número de threads deve ser maior que 0!\n");
+            fprintf(stderr, "Number of threads must be greater than 0!\n");
             return ARGP_ERR_UNKNOWN;
         }
         break;
@@ -64,11 +63,10 @@ static error_t parse_opt(int key, char *arg, struct argp_state *state)
     return 0;
 }
 
-static struct argp argp = {options, parse_opt, NULL, "NUSSINOV Description"};
+static struct argp argp = {options, parse_opt, NULL, "NUSSINOV Help"};
 
 pthread_barrier_t barrier;
 
-/* RNA bases represented as chars, range is [0,3] */
 typedef char base;
 
 base *seq;
@@ -104,7 +102,6 @@ void freeMatrix(int n)
     free(seq);
 }
 
-/* Array initialization. */
 static void init_array(int n)
 {
     int i, j;
@@ -174,21 +171,21 @@ int main(int argc, char **argv)
     struct arguments arguments;
     arguments.size = 0;
     arguments.debug = 0;
-    arguments.num_threads = 1;
+    arguments.num_threads = 0;
 
     argp_parse(&argp, argc, argv, 0, 0, &arguments);
 
     if (!arguments.size)
     {
-        fprintf(stderr, "O argumento -d é obrigatório. Use -h para ver os comandos.\n");
+        fprintf(stderr, "The -d argument is required. Use -h to see the commands.\n");
         exit(1);
     }
 
-    /*if (!arguments.num_threads)
+    if (!arguments.num_threads)
     {
         fprintf(stderr, "O argumento -t é obrigatório e deve ser maior que 0. Use -h para ver os comandos.\n");
         exit(1);
-    }*/
+    }
 
     int n = arguments.size;
     NUM_THREADS = arguments.num_threads;
@@ -212,7 +209,7 @@ int main(int argc, char **argv)
         pthread_join(threads[i], NULL);
     }
 
-    printf("\nRESULTADO: %.2lf\n", table[0][n - 1]);
+    printf("\nRESULT: %.2lf\n", table[0][n - 1]);
 
     if (arguments.debug)
         print_array(n);

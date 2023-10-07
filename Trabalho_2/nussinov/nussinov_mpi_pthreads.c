@@ -76,6 +76,7 @@ typedef struct {
 base *seq;
 double **table;
 
+int NUM_THREADS;
 int NUM_THREADS_PER_PROCESS;
 pthread_barrier_t barrier;
 
@@ -154,14 +155,18 @@ void *kernel_nussinov(void *arg) {
                 table[i][j] = max_score(table[i][j], table[i][k] + table[k+1][j]);
             }
         }
+
         pthread_barrier_wait(&barrier);
-        MPI_Barrier(MPI_COMM_WORLD);
-        //printf("\ntable[%d][%d] = %.2f",i,j,table[i][j]);       
-        for (int src = 0; src < num_processes; src++) {
-            for (j = i+1+src; j < n; j += num_processes) {
-                MPI_Bcast(&table[i][j], 1, MPI_DOUBLE, src, MPI_COMM_WORLD);
+
+        if(num_thread == 0) {   
+            MPI_Barrier(MPI_COMM_WORLD);    
+            for (int src = 0; src < num_processes; src++) {
+                for (j = i+1+src; j < n; j += num_processes) {
+                    MPI_Bcast(&table[i][j], 1, MPI_DOUBLE, src, MPI_COMM_WORLD);
+                }
             }
         }
+        pthread_barrier_wait(&barrier);
     }
 
     return NULL;

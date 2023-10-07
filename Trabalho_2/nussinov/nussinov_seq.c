@@ -3,18 +3,16 @@
 #include <math.h>
 #include <argp.h>
 #include "polybench.h"
-
-/* Definição dos argumentos e suas opções */
 struct arguments
 {
-    int size;    // tamanho da matriz
-    int debug;   // debug
+    int size;
+    int debug;
 };
 
 static struct argp_option options[] = {
     {"size", 'd', "SIZE", 0, "Specify matrix size (small, medium, or large)"},
-    {"debug", 'D', 0, 0, "Print debug information"},
-    {"help", 'h', 0, 0, "Show help message"},
+    {"debug", 'D', 0, 0, "Print entire resultant matrix"},
+    {"help", 'h', 0, 0, "Show this help message"},
     {0}
 };
 
@@ -34,7 +32,7 @@ static error_t parse_opt(int key, char *arg, struct argp_state *state)
             arguments->size = 9950;
         else
         {
-            fprintf(stderr, "Tamanho especificado não é válido: %s\n", arg);
+            fprintf(stderr, "Size is not a valid option: %s\n", arg);
             return ARGP_ERR_UNKNOWN;
         }
         break;
@@ -53,7 +51,7 @@ static error_t parse_opt(int key, char *arg, struct argp_state *state)
 }
 
 
-static struct argp argp = {options, parse_opt, NULL, "NUSSINOV Description"};
+static struct argp argp = {options, parse_opt, NULL, "NUSSINOV Help"};
 
 /* RNA bases represented as chars, range is [0,3] */
 typedef char base;
@@ -84,12 +82,10 @@ void freeMatrix(int n)
     free(seq);
 }
 
-/* Array initialization. */
 static void init_array(int n)
 {
     int i, j;
 
-    // base is AGCT/0..3
     for (i = 0; i < n; i++)
     {
         seq[i] = (base)((i + 1) % 4);
@@ -147,14 +143,14 @@ int main(int argc, char **argv)
 {
     polybench_start_instruments;
     struct arguments arguments;
-    arguments.size = 0;   // valor padrão
+    arguments.size = 0;
     arguments.debug = 0;
 
     argp_parse(&argp, argc, argv, 0, 0, &arguments);
 
     if (!arguments.size)
     {
-        fprintf(stderr, "O argumento -d é obrigatório. Use -h para ver os comandos.\n");
+        fprintf(stderr, "The -d argument is required. Use -h to see the commands.\n");
         exit(1);
     }
 
@@ -164,7 +160,7 @@ int main(int argc, char **argv)
     init_array(n);
     kernel_nussinov(n);
 
-    printf("\nRESULTADO: %.2lf\n", table[0][n - 1]);
+    printf("\nRESULT: %.2lf\n", table[0][n - 1]);
 
     if (arguments.debug)
         print_array(n);
@@ -174,5 +170,5 @@ int main(int argc, char **argv)
    polybench_stop_instruments;
    polybench_print_instruments;
 
-    return 0;
+   return 0;
 }
